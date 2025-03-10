@@ -169,3 +169,34 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Project-specific additions
+# Data directories
+data/
+data/text/
+data/images/
+chroma_db/
+
+# API key related
+*api_key*
+credentials.json
+.streamlit/secrets.toml
+
+# Large model files that might be downloaded
+*.pt
+*.bin
+*.onnx
+models/
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Editor specific
+.vscode/
+.idea/
+
+# Temporary files created by the application
+temp/
+output/
+results/
