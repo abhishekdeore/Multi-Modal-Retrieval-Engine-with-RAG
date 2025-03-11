@@ -1,0 +1,472 @@
+
+
+WikipediaThe Free Encyclopedia
+Search Wikipedia
+Search
+Donate
+Create account
+Log in
+
+Banner logo	
+Wikimania 2025 Program Proposals are now open!
+Click here to Apply Now
+This application is open until Monday 31st March, 2025 end of day
+
+[ Help with translations! ]
+Contents hide
+(Top)
+History
+Overview
+Variants
+
+Original ViT
+Architectural improvements
+Pooling
+Masked Autoencoder
+DINO
+Swin Transformer
+TimeSformer
+ViT-VQGAN
+Others
+Comparison with CNNs
+Applications
+See also
+References
+Further reading
+Vision transformer
+
+Article
+Talk
+Read
+Edit
+View history
+
+Tools
+Appearance hide
+Text
+
+Small
+
+Standard
+
+Large
+Width
+
+Standard
+
+Wide
+Color (beta)
+
+Automatic
+
+Light
+
+Dark
+From Wikipedia, the free encyclopedia
+
+The architecture of vision transformer. An input image is divided into patches, each of which is linearly mapped through a patch embedding layer, before entering a standard Transformer encoder.
+A vision transformer (ViT) is a transformer designed for computer vision.[1] A ViT decomposes an input image into a series of patches (rather than text into tokens), serializes each patch into a vector, and maps it to a smaller dimension with a single matrix multiplication. These vector embeddings are then processed by a transformer encoder as if they were token embeddings.
+
+ViTs were designed as alternatives to convolutional neural networks (CNNs) in computer vision applications. They have different inductive biases, training stability, and data efficiency.[2] Compared to CNNs, ViTs are less data efficient, but have higher capacity. Some of the largest modern computer vision models are ViTs, such as one with 22B parameters.[3][4]
+
+Subsequent to its publication, many variants were proposed, with hybrid architectures with both features of ViTs and CNNs. ViTs have found application in image recognition, image segmentation, weather prediction, and autonomous driving.[5][6]
+
+History
+Transformers were introduced in Attention Is All You Need (2017),[7] and have found widespread use in natural language processing. A 2019 paper[8] applied ideas from the Transformer to computer vision. Specifically, they started with a ResNet, a standard convolutional neural network used for computer vision, and replaced all convolutional kernels by the self-attention mechanism found in a Transformer. It resulted in superior performance. However, it is not a Vision Transformer.
+
+In 2020, an encoder-only Transformer was adapted for computer vision, yielding the ViT, which reached state of the art in image classification, overcoming the previous dominance of CNN.[1] The masked autoencoder (2022) extended ViT to work with unsupervised training. The vision transformer and the masked autoencoder, in turn, stimulated new developments in convolutional neural networks.[9][10]
+
+Subsequently, there was cross-fertilization between the previous CNN approach and the ViT approach.
+
+In 2021, some important variants of the Vision Transformers were proposed. These variants are mainly intended to be more efficient, more accurate or better suited to a specific domain. Two studies [11][12] improved efficiency and robustness of ViT by adding a CNN as a preprocessor. The Swin Transformer[13] achieved state-of-the-art results on some object detection datasets such as COCO, by using convolution-like sliding windows of attention mechanism, and the pyramid process in classical computer vision.
+
+Overview
+
+Vision Transformer architecture, showing the encoder-only Transformer blocks inside.
+The basic architecture, used by the original 2020 paper,[1] is as follows. In summary, it is a BERT-like encoder-only Transformer.
+
+The input image is of type 
+R
+H
+×
+W
+×
+C
+{\displaystyle \mathbb {R} ^{H\times W\times C}}, where 
+H
+,
+W
+,
+C
+{\displaystyle H,W,C} are height, width, channel (RGB). It is then split into square-shaped patches of type 
+R
+P
+×
+P
+×
+C
+{\displaystyle \mathbb {R} ^{P\times P\times C}}.
+
+For each patch, the patch is pushed through a linear operator, to obtain a vector ("patch embedding"). The position of the patch is also transformed into a vector by "position encoding". The two vectors are added, then pushed through several Transformer encoders.
+
+The attention mechanism in a ViT repeatedly transforms representation vectors of image patches, incorporating more and more semantic relations between image patches in an image. This is analogous to how in natural language processing, as representation vectors flow through a transformer, they incorporate more and more semantic relations between words, from syntax to semantics.
+
+The above architecture turns an image into a sequence of vector representations. To use these for downstream applications, an additional head needs to be trained to interpret them.
+
+For example, to use it for classification, one can add a shallow MLP on top of it that outputs a probability distribution over classes. The original paper uses a linear-GeLU-linear-softmax network.[1]
+
+Variants
+Original ViT
+The original ViT was an encoder-only Transformer supervise-trained to predict the image label from the patches of the image. As in the case of BERT, it uses a special token <CLS> in the input side, and the corresponding output vector is used as the only input of the final output MLP head. The special token is an architectural hack to allow the model to compress all information relevant for predicting the image label into one vector.
+
+
+Animation of ViT. The 0th token is the special <CLS>. The other 9 patches are projected by a linear layer before being fed into the Transformer encoder as input tokens 1 to 9.
+Transformers found their initial applications in natural language processing tasks, as demonstrated by language models such as BERT and GPT-3. By contrast the typical image processing system uses a convolutional neural network (CNN). Well-known projects include Xception, ResNet, EfficientNet,[14] DenseNet,[15] and Inception.[16]
+
+Transformers measure the relationships between pairs of input tokens (words in the case of text strings), termed attention. The cost is quadratic in the number of tokens. For images, the basic unit of analysis is the pixel. However, computing relationships for every pixel pair in a typical image is prohibitive in terms of memory and computation. Instead, ViT computes relationships among pixels in various small sections of the image (e.g., 16x16 pixels), at a drastically reduced cost. The sections (with positional embeddings) are placed in a sequence. The embeddings are learnable vectors. Each section is arranged into a linear sequence and multiplied by the embedding matrix. The result, with the position embedding is fed to the transformer.[16]
+
+Architectural improvements
+Pooling
+Main article: Pooling layer
+After the ViT processes an image, it produces some embedding vectors. These must be converted to a single class probability prediction by some kind of network. In the original ViT and Masked Autoencoder, they used a dummy [CLS] token , in emulation of the BERT language model. The output at [CLS] is the classification token, which is then processed by a LayerNorm-feedforward-softmax module into a probability distribution.
+
+Global average pooling (GAP) does not use the dummy token, but simply takes the average of all output tokens as the classification token. It was mentioned in the original ViT as being equally good.[1]
+
+Multihead attention pooling (MAP) applies a multiheaded attention block to pooling. Specifically, it takes as input a list of vectors 
+x
+1
+,
+x
+2
+,
+…
+,
+x
+n
+{\displaystyle x_{1},x_{2},\dots ,x_{n}}, which might be thought of as the output vectors of a layer of a ViT. The output from MAP is 
+M
+u
+l
+t
+i
+h
+e
+a
+d
+e
+d
+A
+t
+t
+e
+n
+t
+i
+o
+n
+(
+Q
+,
+V
+,
+V
+)
+{\displaystyle \mathrm {MultiheadedAttention} (Q,V,V)}, where 
+q
+{\displaystyle q} is a trainable query vector, and 
+V
+{\displaystyle V} is the matrix with rows being 
+x
+1
+,
+x
+2
+,
+…
+,
+x
+n
+{\displaystyle x_{1},x_{2},\dots ,x_{n}}.[17] This was first proposed in the Set Transformer architecture.[18]
+
+Later papers demonstrated that GAP and MAP both perform better than BERT-like pooling.[17][19] A variant of MAP was proposed as class attention, which applies MAP, then feedforward, then MAP again.[20]
+
+Re-attention was proposed to allow training deep ViT. It changes the multiheaded attention module.[21]
+
+Masked Autoencoder
+
+Masked Autoencoder architecture.
+The Masked Autoencoder[22] took inspiration from denoising autoencoders and context encoders.[23] It has two ViTs put end-to-end. The first one ("encoder") takes in image patches with positional encoding, and outputs vectors representing each patch. The second one (called "decoder", even though it is still an encoder-only Transformer) takes in vectors with positional encoding and outputs image patches again. During training, both the encoder and the decoder ViTs are used. During inference, only the encoder ViT is used.
+
+During training, each image is cut into patches, and with their positional embeddings added. Of these, only 25% of the patches are selected. The encoder ViT processes the selected patches. No mask tokens are used. Then, mask tokens are added back in, and positional embeddings added again. These are processed by the decoder ViT, which outputs a reconstruction of the full image. The loss is the total mean-squared loss in pixel-space for all masked patches (reconstruction loss is not computed for non-masked patches).
+
+A similar architecture was BERT ViT (BEiT), published concurrently.[24]
+
+DINO
+Like the Masked Autoencoder, the DINO (self-distillation with no labels) method is a way to train a ViT by self-supervision.[25] DINO is a form of teacher-student self-distillation. In DINO, the student is the model itself, and the teacher is an exponential average of the student's past states. The method is similar to previous works like momentum contrast[26] and bootstrap your own latent (BYOL).[27]
+
+The loss function used in DINO is the cross-entropy loss between the output of the teacher network (
+f
+θ
+t
+′
+{\displaystyle f_{\theta '_{t}}}) and the output of the student network (
+f
+θ
+t
+{\displaystyle f_{\theta _{t}}}). The teacher network is an exponentially decaying average of the student network's past parameters: 
+θ
+t
+′
+=
+α
+θ
+t
++
+α
+(
+1
+−
+α
+)
+θ
+t
+−
+1
++
+⋯
+{\displaystyle \theta '_{t}=\alpha \theta _{t}+\alpha (1-\alpha )\theta _{t-1}+\cdots }. The inputs to the networks are two different crops of the same image, represented as 
+T
+(
+x
+)
+{\displaystyle T(x)} and 
+T
+′
+(
+x
+)
+{\displaystyle T'(x)}, where 
+x
+{\displaystyle x} is the original image. The loss function is written as
+L
+(
+f
+θ
+t
+′
+(
+T
+(
+x
+)
+)
+,
+f
+θ
+t
+(
+T
+′
+(
+x
+)
+)
+)
+{\displaystyle L(f_{\theta '_{t}}(T(x)),f_{\theta _{t}}(T'(x)))}One issue is that the network can "collapse" by always outputting the same value (
+y
+{\displaystyle y}), regardless of the input. To prevent this collapse, DINO employs two strategies:
+
+Sharpening: The teacher network's output is sharpened using a softmax function with a lower temperature. This makes the teacher more "confident" in its predictions, forcing the student to learn more meaningful representations to match the teacher's sharpened output.
+Centering: The teacher network's output is centered by averaging it with its previous outputs. This prevents the teacher from becoming biased towards any particular output value, encouraging the student to learn a more diverse set of features.
+In January 2024, Meta AI Research released an updated version called DINOv2[28] with improvements in architecture, loss function, and optimization technique. It was trained on a larger and more diverse dataset. The features learned by DINOv2 were more transferable, meaning it had better performance in downstream tasks.
+
+Swin Transformer
+The Swin Transformer ("Shifted windows")[13] took inspiration from standard CNNs:
+
+Instead of performing self-attention over the entire sequence of tokens, one for each patch, it performs "shifted window based" self-attention, which means only performing attention over square-shaped blocks of patches. One block of patches is analogous to the receptive field of one convolution.
+After every few attention blocks, there is a "merge layer", which merges neighboring 2x2 tokens into a single token. This is analogous to pooling (by 2x2 convolution kernels, with stride 2). Merging means concatenation followed by multiplication with a matrix.
+It is improved by Swin Transformer V2,[29] which modifies upon the ViT by a different attention mechanism[13]: Figure 1 :
+
+LayerNorm immediately after each attention and feedforward layer ("res-post-norm");
+scaled cosine attention to replace the original dot product attention;
+log-spaced continuous relative position bias, which allows transfer learning across different window resolutions.
+TimeSformer
+The TimeSformer[30] was designed for video understanding tasks, and it applied a factorized self-attention, similar to the factorized convolution kernels found in the Inception CNN architecture.[31] Schematically, it divides a video into frames, and each frame into a square grid of patches (same as ViT). Let each patch coordinate be denoted by 
+x
+,
+y
+,
+t
+{\displaystyle x,y,t}, denoting horizontal, vertical, and time.
+
+A space attention layer is a self-attention layer where each query patch 
+q
+x
+,
+y
+,
+t
+{\displaystyle q_{x,y,t}} attends to only the key and value patches 
+k
+x
+′
+,
+y
+′
+,
+t
+′
+,
+v
+x
+′
+,
+y
+′
+,
+t
+′
+{\displaystyle k_{x',y',t'},v_{x',y',t'}} such that 
+t
+=
+t
+′
+{\displaystyle t=t'}.
+A time attention layer is where the requirement is 
+x
+′
+=
+x
+,
+y
+′
+=
+y
+{\displaystyle x'=x,y'=y} instead.
+The TimeSformer also considered other attention layer designs, such as the "height attention layer" where the requirement is 
+x
+′
+=
+x
+,
+t
+′
+=
+t
+{\displaystyle x'=x,t'=t}. However, they found empirically that the best design interleaves one space attention layer and one time attention layer.
+
+ViT-VQGAN
+In ViT-VQGAN,[32] there are two ViT encoders and a discriminator. One encodes 8x8 patches of an image into a list of vectors, one for each patch. The vectors can only come from a discrete set of "codebook", as in vector quantization. Another encodes the quantized vectors back to image patches. The training objective attempts to make the reconstruction image (the output image) faithful to the input image. The discriminator (usually a convolutional network, but other networks are allowed) attempts to decide if an image is an original real image, or a reconstructed image by the ViT.
+
+The idea is essentially the same as vector quantized variational autoencoder (VQVAE) plus generative adversarial network (GAN).
+
+After such a ViT-VQGAN is trained, it can be used to code an arbitrary image into a list of symbols, and code an arbitrary list of symbols into an image. The list of symbols can be used to train into a standard autoregressive transformer (like GPT), for autoregressively generating an image. Further, one can take a list of caption-image pairs, convert the images into strings of symbols, and train a standard GPT-style transformer. Then at test time, one can just give an image caption, and have it autoregressively generate the image. This is the structure of Google Parti.[33]
+
+Others
+Other examples include the visual transformer,[34] CoAtNet,[35] CvT,[36] the data-efficient ViT (DeiT),[37] etc.
+
+In the Transformer in Transformer architecture, each layer applies a vision Transformer layer on each image patch embedding, add back the resulting tokens to the embedding, then applies another vision Transformer layer.[38]
+
+Comparison with CNNs
+Typically, ViT uses patch sizes larger than standard CNN kernels (3x3 to 7x7). ViT is more sensitive to the choice of the optimizer, hyperparameters, and network depth. Preprocessing with a layer of smaller-size, overlapping (stride < size) convolutional filters helps with performance and stability.[12]
+
+This different behavior seems to derive from the different inductive biases they possess.
+
+CNN applies the same set of filters for processing the entire image. This allows them to be more data efficient and less sensitive to local perturbations.[2] ViT applies self-attention, allowing them to easily capture long-range relationships between patches. They also require more data to train, but they can ingest more training data compared to CNN, which might not improve after training on a large enough training dataset. ViT also appears more robust to input image distortions such as adversarial patches or permutations.[39]
+
+Applications
+ViT have been used in many Computer Vision tasks with excellent results and in some cases even state-of-the-art. Image Classification, Object Detection, Video Deepfake Detection,[40] Image segmentation,[41] Anomaly detection, Image Synthesis, Cluster analysis, Autonomous Driving.[5][6]
+
+ViT had been used for image generation as backbones for GAN[42] and for diffusion models (diffusion transformer, or DiT).[43]
+
+DINO[25] has been demonstrated to learn useful representations for clustering images and exploring morphological profiles on biological datasets, such as images generated with the Cell Painting assay.[44]
+
+In 2024, a 113 billion-parameter ViT model was proposed (the largest ViT to date) for weather and climate prediction, and trained on the Frontier supercomputer with a throughput of 1.6 exaFLOPs.[45]
+
+See also
+Transformer (machine learning model)
+Convolutional neural network
+Attention (machine learning)
+Perceiver
+Deep learning
+PyTorch
+TensorFlow
+References
+ Dosovitskiy, Alexey; Beyer, Lucas; Kolesnikov, Alexander; Weissenborn, Dirk; Zhai, Xiaohua; Unterthiner, Thomas; Dehghani, Mostafa; Minderer, Matthias; Heigold, Georg; Gelly, Sylvain; Uszkoreit, Jakob (2021-06-03). "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale". arXiv:2010.11929 [cs.CV].
+ Raghu, Maithra; Unterthiner, Thomas; Kornblith, Simon; Zhang, Chiyuan; Dosovitskiy, Alexey (2021-08-19). "Do Vision Transformers See Like Convolutional Neural Networks?". arXiv:2108.08810 [cs.CV].
+ Dehghani, Mostafa; Djolonga, Josip; Mustafa, Basil; Padlewski, Piotr; Heek, Jonathan; Gilmer, Justin; Steiner, Andreas; Caron, Mathilde; Geirhos, Robert (2023-02-10), Scaling Vision Transformers to 22 Billion Parameters, arXiv:2302.05442
+ "Scaling vision transformers to 22 billion parameters". research.google. Retrieved 2024-08-07.
+ Han, Kai; Wang, Yunhe; Chen, Hanting; Chen, Xinghao; Guo, Jianyuan; Liu, Zhenhua; Tang, Yehui; Xiao, An; Xu, Chunjing; Xu, Yixing; Yang, Zhaohui; Zhang, Yiman; Tao, Dacheng (2023-01-01). "A Survey on Vision Transformer". IEEE Transactions on Pattern Analysis and Machine Intelligence. 45 (1): 87–110. arXiv:2012.12556. doi:10.1109/TPAMI.2022.3152247. ISSN 0162-8828. PMID 35180075.
+ Khan, Salman; Naseer, Muzammal; Hayat, Munawar; Zamir, Syed Waqas; Khan, Fahad Shahbaz; Shah, Mubarak (2022-09-13). "Transformers in Vision: A Survey". ACM Comput. Surv. 54 (10s): 200:1–200:41. arXiv:2101.01169. doi:10.1145/3505244. ISSN 0360-0300.
+ Vaswani, Ashish; Shazeer, Noam; Parmar, Niki; Uszkoreit, Jakob; Jones, Llion; Gomez, Aidan N; Kaiser, Łukasz; Polosukhin, Illia (2017). "Attention is All you Need" (PDF). Advances in Neural Information Processing Systems. 30. Curran Associates, Inc.
+ Ramachandran, Prajit; Parmar, Niki; Vaswani, Ashish; Bello, Irwan; Levskaya, Anselm; Shlens, Jon (2019). "Stand-Alone Self-Attention in Vision Models". Advances in Neural Information Processing Systems. 32. Curran Associates, Inc. arXiv:1906.05909.
+ Liu, Zhuang; Mao, Hanzi; Wu, Chao-Yuan; Feichtenhofer, Christoph; Darrell, Trevor; Xie, Saining (2022). "A ConvNet for the 2020s": 11976–11986. arXiv:2201.03545. {{cite journal}}: Cite journal requires |journal= (help)
+ Woo, Sanghyun; Debnath, Shoubhik; Hu, Ronghang; Chen, Xinlei; Liu, Zhuang; Kweon, In So; Xie, Saining (2023). "ConvNeXt V2: Co-Designing and Scaling ConvNets With Masked Autoencoders": 16133–16142. arXiv:2301.00808. {{cite journal}}: Cite journal requires |journal= (help)
+ Wu, Bichen; Xu, Chenfeng; Dai, Xiaoliang; Wan, Alvin; Zhang, Peizhao; Yan, Zhicheng; Masayoshi, Tomizuka; Gonzalez, Joseph; Keutzer, Kurt; Vajda, Peter (2020). "Visual Transformers: Token-based Image Representation and Processing for Computer Vision". arXiv:2006.03677 [cs.CV].
+ Xiao, Tete; Singh, Mannat; Mintun, Eric; Darrell, Trevor; Dollár, Piotr; Girshick, Ross (2021-06-28). "Early Convolutions Help Transformers See Better". arXiv:2106.14881 [cs.CV].
+ Liu, Ze; Lin, Yutong; Cao, Yue; Hu, Han; Wei, Yixuan; Zhang, Zheng; Lin, Stephen; Guo, Baining (2021-03-25). "Swin Transformer: Hierarchical Vision Transformer using Shifted Windows". arXiv:2103.14030 [cs.CV].
+ Tan, Mingxing; Le, Quoc (23 June 2021). "EfficientNetV2: Smaller Models and Faster Training" (PDF). Proceedings of the 38th International Conference on Machine Learning (PMLR). 139: 10096–10106. arXiv:2104.00298. Retrieved 31 October 2023.
+ Huang, Gao; Liu, Zhuang; van der Maaten, Laurens; Q. Weinberger, Kilian (28 Jan 2018). "Densely Connected Convolutional Networks". arXiv:1608.06993 [cs.CV].
+ Sarkar, Arjun (2021-05-20). "Are Transformers better than CNN's at Image Recognition?". Medium. Retrieved 2021-07-11.
+ Zhai, Xiaohua; Kolesnikov, Alexander; Houlsby, Neil; Beyer, Lucas (June 2022). "Scaling Vision Transformers". 2022 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR). IEEE. pp. 1204–1213. arXiv:2106.04560. doi:10.1109/cvpr52688.2022.01179. ISBN 978-1-6654-6946-3.
+ Lee, Juho; Lee, Yoonho; Kim, Jungtaek; Kosiorek, Adam; Choi, Seungjin; Teh, Yee Whye (2019-05-24). "Set Transformer: A Framework for Attention-based Permutation-Invariant Neural Networks". Proceedings of the 36th International Conference on Machine Learning. PMLR: 3744–3753. arXiv:1810.00825.
+ Karamcheti, Siddharth; Nair, Suraj; Chen, Annie S.; Kollar, Thomas; Finn, Chelsea; Sadigh, Dorsa; Liang, Percy (2023-02-24), Language-Driven Representation Learning for Robotics, arXiv:2302.12766
+ Touvron, Hugo; Cord, Matthieu; Sablayrolles, Alexandre; Synnaeve, Gabriel; Jégou, Hervé (2021). "Going Deeper With Image Transformers": 32–42. arXiv:2103.17239. {{cite journal}}: Cite journal requires |journal= (help)
+ Zhou, Daquan; Kang, Bingyi; Jin, Xiaojie; Yang, Linjie; Lian, Xiaochen; Jiang, Zihang; Hou, Qibin; Feng, Jiashi (2021-04-19), DeepViT: Towards Deeper Vision Transformer, arXiv:2103.11886
+ He, Kaiming; Chen, Xinlei; Xie, Saining; Li, Yanghao; Dollár, Piotr; Girshick, Ross (2021). "Masked Autoencoders Are Scalable Vision Learners". arXiv:2111.06377 [cs.CV].
+ Pathak, Deepak; Krahenbuhl, Philipp; Donahue, Jeff; Darrell, Trevor; Efros, Alexei A. (June 2016). "Context Encoders: Feature Learning by Inpainting". 2016 IEEE Conference on Computer Vision and Pattern Recognition (CVPR). IEEE. pp. 2536–2544. arXiv:1604.07379. doi:10.1109/CVPR.2016.278. ISBN 978-1-4673-8851-1.
+ Bao, Hangbo; Dong, Li; Piao, Songhao; Wei, Furu (2021-10-06). "BEiT: BERT Pre-Training of Image Transformers". International Conference on Learning Representations. arXiv:2106.08254.
+ Caron, Mathilde; Touvron, Hugo; Misra, Ishan; Jegou, Herve; Mairal, Julien; Bojanowski, Piotr; Joulin, Armand (October 2021). "Emerging Properties in Self-Supervised Vision Transformers". 2021 IEEE/CVF International Conference on Computer Vision (ICCV). IEEE. pp. 9630–9640. arXiv:2104.14294. doi:10.1109/iccv48922.2021.00951. ISBN 978-1-6654-2812-5.
+ He, Kaiming; Fan, Haoqi; Wu, Yuxin; Xie, Saining; Girshick, Ross (2020). "Momentum Contrast for Unsupervised Visual Representation Learning": 9729–9738. arXiv:1911.05722. {{cite journal}}: Cite journal requires |journal= (help)
+ Grill, Jean-Bastien; Strub, Florian; Altché, Florent; Tallec, Corentin; Richemond, Pierre; Buchatskaya, Elena; Doersch, Carl; Avila Pires, Bernardo; Guo, Zhaohan; Gheshlaghi Azar, Mohammad; Piot, Bilal; kavukcuoglu, koray; Munos, Remi; Valko, Michal (2020). "Bootstrap Your Own Latent - A New Approach to Self-Supervised Learning". Advances in Neural Information Processing Systems. 33. Curran Associates, Inc.: 21271–21284.
+ Oquab, Maxime; Darcet, Timothée; Moutakanni, Théo; Vo, Huy; Szafraniec, Marc; Khalidov, Vasil; Fernandez, Pierre; Haziza, Daniel; Massa, Francisco (2023-04-14). "DINOv2: Learning Robust Visual Features without Supervision". arXiv:2304.07193 [cs.CV].
+ Liu, Ze; Hu, Han; Lin, Yutong; Yao, Zhuliang; Xie, Zhenda; Wei, Yixuan; Ning, Jia; Cao, Yue; Zhang, Zheng; Dong, Li; Wei, Furu; Guo, Baining (2022). "Swin Transformer V2: Scaling Up Capacity and Resolution". Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition. pp. 12009–12019.
+ Bertasius, Gedas; Wang, Heng; Torresani, Lorenzo (2021-02-09). "Is Space-Time Attention All You Need for Video Understanding?". arXiv:2102.05095 [cs.CV].
+ Szegedy, Christian; Vanhoucke, Vincent; Ioffe, Sergey; Shlens, Jon; Wojna, Zbigniew (2016). "Rethinking the Inception Architecture for Computer Vision": 2818–2826. arXiv:1512.00567. {{cite journal}}: Cite journal requires |journal= (help)
+ Yu, Jiahui; Li, Xin; Koh, Jing Yu; Zhang, Han; Pang, Ruoming; Qin, James; Ku, Alexander; Xu, Yuanzhong; Baldridge, Jason; Wu, Yonghui (2021). "Vector-quantized Image Modeling with Improved VQGAN". arXiv:2110.04627 [cs.CV].
+ "Parti: Pathways Autoregressive Text-to-Image Model". sites.research.google. Retrieved 2023-11-03.
+ Wu, Bichen; Xu, Chenfeng; Dai, Xiaoliang; Wan, Alvin; Zhang, Peizhao; Yan, Zhicheng; Tomizuka, Masayoshi; Gonzalez, Joseph; Keutzer, Kurt (2020-11-19), Visual Transformers: Token-based Image Representation and Processing for Computer Vision, arXiv:2006.03677
+ Dai, Zihang; Liu, Hanxiao; Le, Quoc V.; Tan, Mingxing (2021-06-09). "CoAtNet: Marrying Convolution and Attention for All Data Sizes". arXiv:2106.04803 [cs.CV].
+ Wu, Haiping; Xiao, Bin; Codella, Noel; Liu, Mengchen; Dai, Xiyang; Yuan, Lu; Zhang, Lei (2021-03-29). "CvT: Introducing Convolutions to Vision Transformers". arXiv:2103.15808 [cs.CV].
+ Touvron, Hugo; Cord, Matthieu; Jégou, Hervé (2022). "DeiT III: Revenge of the ViT". In Avidan, Shai; Brostow, Gabriel; Cissé, Moustapha; Farinella, Giovanni Maria; Hassner, Tal (eds.). Computer Vision – ECCV 2022. Lecture Notes in Computer Science. Vol. 13684. Cham: Springer Nature Switzerland. pp. 516–533. doi:10.1007/978-3-031-20053-3_30. ISBN 978-3-031-20053-3.
+ Han, Kai; Xiao, An; Wu, Enhua; Guo, Jianyuan; XU, Chunjing; Wang, Yunhe (2021). "Transformer in Transformer". Advances in Neural Information Processing Systems. 34. Curran Associates, Inc.: 15908–15919.
+ Naseer, Muzammal; Ranasinghe, Kanchana; Khan, Salman; Hayat, Munawar; Khan, Fahad Shahbaz; Yang, Ming-Hsuan (2021-05-21). "Intriguing Properties of Vision Transformers". arXiv:2105.10497 [cs.CV].
+ Coccomini, Davide; Messina, Nicola; Gennaro, Claudio; Falchi, Fabrizio (2022). "Combining Efficient Net and Vision Transformers for Video Deepfake Detection". Image Analysis and Processing – ICIAP 2022. Lecture Notes in Computer Science. Vol. 13233. pp. 219–229. arXiv:2107.02612. doi:10.1007/978-3-031-06433-3_19. ISBN 978-3-031-06432-6. S2CID 235742764.
+ Kirillov, Alexander; Mintun, Eric; Ravi, Nikhila; Mao, Hanzi; Rolland, Chloe; Gustafson, Laura; Xiao, Tete; Whitehead, Spencer; Berg, Alexander C.; Lo, Wan-Yen; Dollar, Piotr; Girshick, Ross (2023). "Segment Anything": 4015–4026. {{cite journal}}: Cite journal requires |journal= (help)
+ Jiang, Yifan; Chang, Shiyu; Wang, Zhangyang (2021). "TransGAN: Two Pure Transformers Can Make One Strong GAN, and That Can Scale Up". Advances in Neural Information Processing Systems. 34. Curran Associates, Inc.: 14745–14758. arXiv:2102.07074.
+ Peebles, William; Xie, Saining (March 2023). "Scalable Diffusion Models with Transformers". arXiv:2212.09748v2 [cs.CV].
+ Doron, Michael; Moutakanni, Théo; Chen, Zitong S.; Moshkov, Nikita; Caron, Mathilde; Touvron, Hugo; Bojanowski, Piotr; Pernice, Wolfgang M.; Caicedo, Juan C. (2023-06-18). "Unbiased single-cell morphology with self-supervised vision transformers". BioRxiv: The Preprint Server for Biology: 2023.06.16.545359. doi:10.1101/2023.06.16.545359. PMC 10312751. PMID 37398158. Retrieved 2024-02-12.
+ Wang, Xiao; Liu, Siyan; Tsaris, Aristeidis; Choi, Jong-Youl; Aji, Ashwin; Fan, Ming; Zhang, Wei; Yin, Junqi; Ashfaq, Moetasim (2024-08-19), ORBIT: Oak Ridge Base Foundation Model for Earth System Predictability, arXiv, doi:10.48550/arXiv.2404.14712, arXiv:2404.14712
+Further reading
+Zhang, Aston; Lipton, Zachary; Li, Mu; Smola, Alexander J. (2024). "11.8. Transformers for Vision". Dive into deep learning. Cambridge New York Port Melbourne New Delhi Singapore: Cambridge University Press. ISBN 978-1-009-38943-3.
+Steiner, Andreas; Kolesnikov, Alexander; Zhai, Xiaohua; Wightman, Ross; Uszkoreit, Jakob; Beyer, Lucas (June 18, 2021). "How to train your ViT? Data, Augmentation, and Regularization in Vision Transformers". arXiv:2106.10270 [cs.CV].
+vte
+Artificial intelligence (AI)
+History (timeline)
+Concepts	
+Parameter HyperparameterLoss functionsRegression Bias–variance tradeoffDouble descentOverfittingClusteringGradient descent SGDQuasi-Newton methodConjugate gradient methodBackpropagationAttentionConvolutionNormalization BatchnormActivation SoftmaxSigmoidRectifierGatingWeight initializationRegularizationDatasets AugmentationPrompt engineeringReinforcement learning Q-learningSARSAImitationPolicy gradientDiffusionLatent diffusion modelAutoregressionAdversaryRAGUncanny valleyRLHFSelf-supervised learningRecursive self-improvementWord embeddingHallucination
+Applications	
+Machine learning In-context learningArtificial neural network Deep learningLanguage model Large language modelNMTArtificial general intelligence
+Implementations	
+Audio–visual	
+AlexNetWaveNetHuman image synthesisHWROCRSpeech synthesis 15.aiElevenLabsSpeech recognition WhisperFacial recognitionAlphaFoldText-to-image models AuroraDALL-EFireflyFluxIdeogramImagenMidjourneyStable DiffusionText-to-video models Dream MachineGen-3 AlphaHailuo AIKlingSoraVeoMusic generation Suno AIUdio
+Text	
+Word2vecSeq2seqGloVeBERTT5LlamaChinchilla AIPaLMGPT 123JChatGPT44o4.5o1o3ClaudeGemini chatbotGrokLaMDABLOOMProject DebaterIBM WatsonIBM WatsonxGranitePanGu-ΣDeepSeekQwen
+Decisional	
+AlphaGoAlphaZeroOpenAI FiveSelf-driving carMuZeroAction selection AutoGPTRobot control
+People	
+Alan TuringWarren Sturgis McCullochWalter PittsJohn von NeumannClaude ShannonMarvin MinskyJohn McCarthyNathaniel RochesterAllen NewellCliff ShawHerbert A. SimonOliver SelfridgeFrank RosenblattBernard WidrowJoseph WeizenbaumSeymour PapertSeppo LinnainmaaPaul WerbosJürgen SchmidhuberYann LeCunGeoffrey HintonJohn HopfieldYoshua BengioLotfi A. ZadehStephen GrossbergAlex GravesAndrew NgFei-Fei LiAlex KrizhevskyIlya SutskeverDemis HassabisDavid SilverIan GoodfellowAndrej Karpathy
+Architectures	
+Neural Turing machineDifferentiable neural computerTransformer Vision transformer (ViT)Recurrent neural network (RNN)Long short-term memory (LSTM)Gated recurrent unit (GRU)Echo state networkMultilayer perceptron (MLP)Convolutional neural network (CNN)Residual neural network (RNN)Highway networkMambaAutoencoderVariational autoencoder (VAE)Generative adversarial network (GAN)Graph neural network (GNN)
+ Portals Technology Category Artificial neural networksMachine learning List CompaniesProjects
+Categories: Neural network architecturesComputer visionArtificial neural networksImage processing
+This page was last edited on 18 February 2025, at 15:46 (UTC).
+Text is available under the Creative Commons Attribution-ShareAlike 4.0 License; additional terms may apply. By using this site, you agree to the Terms of Use and Privacy Policy. Wikipedia® is a registered trademark of the Wikimedia Foundation, Inc., a non-profit organization.
+Privacy policyAbout WikipediaDisclaimersContact WikipediaCode of ConductDevelopersStatisticsCookie statementMobile view
+Wikimedia Foundation
+Powered by MediaWiki
+
+Vision transformer
+
+8 languages
+Add topic
